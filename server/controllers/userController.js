@@ -1,64 +1,55 @@
-const User = require("../models/userModel");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const { createUser, getUserByEmail } = require("../models/userModel");
 
-// Secret key for JWT
-const JWT_SECRET = "your_jwt_secret"; // Change this in production
-
-// Sign-Up Controller
-const signUp = async (req, res) => {
-  const { firstName, lastName, email, password } = req.body;
+const registerUser = async (req, res) => {
+  const { first_name, last_name, email, password } = req.body;
 
   try {
-    // Check if email already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email is already in use." });
-    }
+    const existingUser = await getUserByEmail(email);
+    if (existingUser)
+      return res.status(400).json({ message: "User already exists" });
 
-    // Create a new user
-    const newUser = await User.create({ firstName, lastName, email, password });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Respond with success
-    return res
+    const newUser = await createUser(
+      first_name,
+      last_name,
+      email,
+      hashedPassword
+    );
+
+    res
       .status(201)
-      .json({ message: "User created successfully!", user: newUser });
+      .json({ message: "User registered successfully", user: newUser });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error creating user." });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Login Controller
-const login = async (req, res) => {
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find user by email
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials." });
-    }
+    const user = await getUserByEmail(email);
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Check if password is correct
-    const isValidPassword = await user.isPasswordValid(password);
-    if (!isValidPassword) {
-      return res.status(400).json({ message: "Invalid credentials." });
-    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    // Respond with the token
-    return res.status(200).json({ message: "Login successful", token });
+    res.json({ message: "Login successful", token });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error logging in." });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-module.exports = {
-  signUp,
-  login,
-};
+module.exports = { registerUser, loginUser };
