@@ -1,9 +1,10 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -34,6 +35,8 @@ const Login = () => {
 
       if (response.ok) {
         console.log("Login successful:", data);
+        localStorage.setItem("authToken", data.token);
+        navigate("/dashboard");
       } else {
         console.log("Login failed:", data);
       }

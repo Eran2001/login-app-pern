@@ -7,6 +7,8 @@ import About from "./pages/About/About";
 import Contact from "./pages/Contact/Contact";
 import Login from "./pages/Login/Login";
 import SignUp from "./pages/SignUp/SignUp";
+import Dashboard from "./pages/ProtectedRoute/Dashboard";
+import ProtectedRoute from "./pages/ProtectedRoute/ProtectedRoute";
 
 const App = () => {
   const { theme } = useTheme();
@@ -20,6 +22,14 @@ const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/sign-up" element={<SignUp />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       <Footer />
     </Router>
